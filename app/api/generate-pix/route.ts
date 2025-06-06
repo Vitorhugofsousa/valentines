@@ -1,55 +1,57 @@
-import { PIX_CONFIG } from '@/lib/config'
 import { NextResponse } from 'next/server'
-import QRCode from 'qrcode'
+import { PIX_CONFIG } from '@/lib/config'
 
-export async function GET() {
+export async function POST(request: Request) {
   try {
-    // Gera o payload do PIX
-    const pixPayload = generatePixPayload()
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN
 
-    // Gera o QR Code
-    const qrCodeDataUrl = await QRCode.toDataURL(pixPayload)
+    if (!accessToken) {
+      throw new Error('Mercado Pago access token não configurado')
+    }
 
+    // Criar pagamento PIX
+    const response = await fetch('https://api.mercadopago.com/v1/payments', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        transaction_amount: parseFloat(PIX_CONFIG.VALOR),
+        description: 'Upgrade Premium - Cardápio do Amor',
+        payment_method_id: 'pix',
+        payer: {
+          email: 'cliente@email.com', // Será substituído pelo email do usuário
+          first_name: 'Cliente',
+          last_name: 'Premium',
+        },
+        metadata: {
+          product_id: PIX_CONFIG.IDENTIFICADOR,
+        },
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao gerar pagamento PIX')
+    }
+
+    // Retornar dados do PIX
     return NextResponse.json({
       success: true,
-      qrCode: qrCodeDataUrl,
-      pixKey: PIX_CONFIG.CHAVE_PIX,
+      qrCode: data.point_of_interaction.transaction_data.qr_code,
+      qrCodeBase64: data.point_of_interaction.transaction_data.qr_code_base64,
+      paymentId: data.id,
       value: PIX_CONFIG.VALOR,
-      receiver: PIX_CONFIG.NOME_RECEBEDOR
+      pixKey: PIX_CONFIG.CHAVE_PIX,
+      receiver: PIX_CONFIG.NOME_RECEBEDOR,
     })
   } catch (error) {
-    console.error('Erro ao gerar QR Code:', error)
+    console.error('Erro ao gerar PIX:', error)
     return NextResponse.json(
-      { error: 'Erro ao gerar QR Code' },
+      { error: 'Erro ao gerar pagamento PIX' },
       { status: 500 }
     )
   }
-}
-
-function generatePixPayload() {
-  // Formata o valor para o padrão do PIX (sem ponto)
-  const valor = PIX_CONFIG.VALOR.replace('.', '')
-  
-  // Gera o payload do PIX
-  const payload = [
-    '00020126', // Payload Format Indicator
-    '35', // Merchant Account Information
-    '0014BR.GOV.BCB.PIX', // GUI
-    '01', // Chave PIX
-    `${PIX_CONFIG.CHAVE_PIX.length}${PIX_CONFIG.CHAVE_PIX}`,
-    '52040000', // Merchant Category Code
-    '5303986', // Transaction Currency (BRL)
-    `5802BR`, // Country Code
-    '5906', // Merchant Name
-    `${PIX_CONFIG.NOME_RECEBEDOR.length}${PIX_CONFIG.NOME_RECEBEDOR}`,
-    '6008BRASILIA', // Merchant City
-    '6207', // Additional Data Field
-    `0503${PIX_CONFIG.IDENTIFICADOR}`, // Reference Label
-    '6304' // CRC16
-  ].join('')
-
-  // Adiciona o valor ao payload
-  const payloadWithValue = payload.replace('5303986', `5303986${valor}`)
-
-  return payloadWithValue
 } 

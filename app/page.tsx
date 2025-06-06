@@ -216,37 +216,22 @@ export default function HomePage() {
     setMenuItems(menuItems.filter((item) => item.id !== id))
   }
 
-  const processPayment = async () => {
+  const processPayment = () => {
     setPaymentLoading(true)
-
     try {
-      // Busca o QR Code do PIX
-      const response = await fetch('/api/generate-pix')
-      const data = await response.json()
-
-      if (!data.success) {
-        throw new Error('Erro ao gerar QR Code')
-      }
-
-      // Mostra o QR Code e instruções
+      window.open('https://mpago.li/1Jri1bX', '_blank')
       const confirmPayment = window.confirm(
         `Para finalizar o pagamento:\n\n` +
-        `1. Abra seu aplicativo de banco\n` +
-        `2. Escaneie o QR Code que será mostrado\n` +
-        `3. Confirme o pagamento de R$ ${data.value}\n` +
-        `4. Clique em OK após o pagamento\n\n` +
-        `Chave PIX: ${data.pixKey}\n` +
-        `Recebedor: ${data.receiver}`
+        `1. Complete o pagamento na janela do Mercado Pago\n` +
+        `2. Após o pagamento, clique em OK aqui\n\n` +
+        `Valor: R$ 5,99`
       )
 
       if (confirmPayment) {
-        // Simula a verificação do pagamento
-        // Em produção, você deve implementar uma verificação real
         const newUserPlan: UserPlan = {
           type: "premium",
-          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 ano
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         }
-
         setUserPlan(newUserPlan)
         localStorage.setItem("user-plan", JSON.stringify(newUserPlan))
         setShowPaymentModal(false)
