@@ -35,7 +35,7 @@ export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [cart, setCart] = useState<CartItem[]>([])
   const [partnerName, setPartnerName] = useState("Amor")
-  const [yourEmail, setYourEmail] = useState("")
+  const [yourName, setYourName] = useState("")
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
   const [specialRequest, setSpecialRequest] = useState("")
@@ -46,7 +46,6 @@ export default function MenuPage() {
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
-  const [yourName, setYourName] = useState("")
 
   useEffect(() => {
     const checkMobile = () => {
@@ -61,13 +60,11 @@ export default function MenuPage() {
 
   useEffect(() => {
     // Simular carregamento dos dados do menu baseado no ID
-    const savedMenu = localStorage.getItem("valentine-menu")
-    const savedPartnerName = localStorage.getItem("partner-name")
-    const savedEmail = localStorage.getItem("your-email")
+    const savedMenu = localStorage.getItem(`valentine-menu-${params.id}`)
+    const savedPartnerName = localStorage.getItem(`partner-name-${params.id}`)
 
     if (savedMenu) setMenuItems(JSON.parse(savedMenu))
     if (savedPartnerName) setPartnerName(savedPartnerName)
-    if (savedEmail) setYourEmail(savedEmail)
   }, [params.id])
 
   const addToCart = (item: MenuItem) => {
@@ -111,7 +108,7 @@ export default function MenuPage() {
     const orderData = {
       customerName,
       customerEmail,
-      partnerEmail: yourEmail,
+      partnerEmail: partnerName,
       items: cart,
       specialRequest,
       orderDate: new Date().toISOString(),
@@ -168,8 +165,8 @@ export default function MenuPage() {
   }
 
   const sendChoices = async () => {
-    if (!yourName || !yourEmail) {
-      alert("Por favor, preencha seu nome e email!")
+    if (!yourName) {
+      alert("Por favor, preencha seu nome!")
       return
     }
 
@@ -188,7 +185,6 @@ export default function MenuPage() {
         body: JSON.stringify({
           menuId: params.id,
           yourName,
-          yourEmail,
           selectedItems: selectedItems.map(id => menuItems.find(item => item.id === id)),
         }),
       })
@@ -477,7 +473,7 @@ export default function MenuPage() {
                 Enviar Minhas Escolhas
               </DialogTitle>
               <DialogDescription>
-                Preencha seus dados para enviar suas escolhas
+                Preencha seu nome para enviar suas escolhas
               </DialogDescription>
             </DialogHeader>
 
@@ -495,24 +491,10 @@ export default function MenuPage() {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="email" className="text-sm">
-                  Seu Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={yourEmail}
-                  onChange={(e) => setYourEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  className="mt-1"
-                />
-              </div>
-
               <Button
                 onClick={sendChoices}
                 className="w-full bg-pink-500 hover:bg-pink-600"
-                disabled={emailLoading || !yourName || !yourEmail}
+                disabled={emailLoading || !yourName}
               >
                 {emailLoading ? (
                   "Enviando..."
